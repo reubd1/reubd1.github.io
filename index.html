@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <title>AR experiment</title>
 	<!-- include A-Frame obviously -->
-<script src="https://aframe.io/releases/0.6.1/aframe.min.js"></script>
+<script src="https://aframe.io/releases/0.8.0/aframe.min.js"></script>
 <!-- include ar.js for A-Frame -->
 <script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"></script>
 	<!-- import events.js script -->
 <script src="https://rawgit.com/nicolocarpignoli/nicolocarpignoli.github.io/master/ar-playground/events.js"></script>
+<script src="https://rawgit.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js"></script>
 	</head>
 <body style='margin : 0px; overflow: hidden;'>
 	 <a-scene embedded arjs='sourceType: webcam;'>
@@ -21,7 +22,17 @@
 			<img id="image-step1" src="YM_USE_remove.png">
 			<img id="image-step2" src="YM_USE_inject.png">
 			<img id="image-vr" src="vr-infographic.jpg">
+			<video id="smartpilot" autoplay loop="true" src="smartpilot_short.mp4"></video>
+			<a-asset-item id="animated-asset" src="https://raw.githubusercontent.com/nicolocarpignoli/nicolocarpignoli.github.io/master/ar-playground/models/CesiumMan.gltf"></a-asset-item>
 		</a-assets>
+
+		<a-marker markerhandler emitevents="true" cursor="rayOrigin: mouse" id="animated-marker" type='pattern' url='m2.patt' value='6'>
+				<a-entity
+					id="animated-model"
+					gltf-model="#animated-asset"
+					scale="2">
+				</a-entity>
+	</a-marker>
 
 		<a-marker  type='pattern' url='pattern-marker2.patt'>
 			<a-entity obj-model="obj: #sp-obj"
@@ -59,11 +70,11 @@
 				<a-text value="Expiry. Date:  2018-12-21" position="0.4 0.63 0" width="3" color="black"></a-text>
 			</a-entity>
 		</a-marker>
-		 <a-marker type='pattern' url='pat_marker_ar1.patt'>
-			<a-entity rotation="-90 0 0">
-				 <a-image src="#image-vr" width="6" height="6"></a-image>
-			</a-entity>
+		 <a-marker type='pattern' url='m1.patt'>
+				<a-video src="#smartpilot" width="1.78" height="1" rotation="270 0 0" play="true"></a-video>
+		  </a-entity>
 		</a-marker>
+
 		<a-entity camera></a-entity> 
 	</a-scene>
 </body>
