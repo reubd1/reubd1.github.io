@@ -6,10 +6,9 @@
 	<!-- include A-Frame obviously -->
 <script src="https://aframe.io/releases/0.8.0/aframe.min.js"></script>
 <!-- include ar.js for A-Frame -->
-<script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"></script>
-	<!-- import events.js script -->
-<script src="https://rawgit.com/nicolocarpignoli/nicolocarpignoli.github.io/master/ar-playground/events.js"></script>
+<script src="https://rawgit.com/jeromeetienne/AR.js/master/aframe/build/aframe-ar.min.js"></script>
 <script src="https://rawgit.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js"></script>
+
 	</head>
 <body style='margin : 0px; overflow: hidden;'>
 	 <a-scene id="a-scene" cursor="rayOrigin: mouse" embedded arjs='sourceType: webcam; maxDetectionRate:30; debugUiEnabled:false;'>
@@ -69,7 +68,7 @@
 				<a-text value="Expiry. Date:  2018-12-21" position="0.4 0.63 0" width="3" color="black"></a-text>
 			</a-entity>
 		</a-marker>
-		 <a-marker type='pattern' markerhandler emitevents="true" url='m1.patt' id="videoMarker">
+		 <a-marker type='pattern' markerhandler2 emitevents="true" url='m1.patt' id="videoMarker">
 				<a-video id="videoScreen" src="#video" width="1.78" height="1" rotation="270 0 0" play="true"></a-video>
 		</a-marker>
 
@@ -80,44 +79,40 @@
 <script type="text/javascript">
 
 	
-    var scene = document.querySelector("a-scene");
-    var vid = document.getElementById("smartpilot");
-var scene
-var AR-VideoScreen
+    var vid = document.getElementById("video");
+
+AFRAME.registerComponent('markerhandler2', {
+	init: function() {
+	const videoMarker = document.querySelector("#videoMarker");
+
+	videoMarker.addEventListener('click', function(ev){
+			if (videoMarker.object3D.visible == true && ev.detail.cursorEl) {
+					vid.play();
+			}
+	});
+}});
 
 AFRAME.registerComponent('markerhandler', {
 
-  init: function() {
+init: function() {
+	const animatedMarker = document.querySelector("#animated-marker");
 
-    // Set up the tick throttling. Will check if marker is active every 500ms
-    this.tick = AFRAME.utils.throttleTick(this.tick, 500, this);
-  },
-
-  tick: function(t, dt) {
-
-    if (document.querySelector("#videoMarker").object3D.visible == true && playing == false) {
-      // MARKER IS PRESENT
-      //alert("MARKER IS PRESENT")
-
-  		scene = document.querySelector('#a-scene');
-      AR-VideoScreen =  document.querySelector('#videoScreen');
-
-
-      videoScreen.addEventListener('click', function () { playPauseVideo(); console.log("Video Play Toggle") });
-      playing = true;
-
-    }
-
-    }else {
-      // MARKER IS HIDDEN, do nothing (up to you)
-    }
-
-});
+	animatedMarker.addEventListener('click', function(ev){
+		if (animatedMarker.object3D.visible == true && ev.detail.cursorEl) {
+			const entity = document.querySelector('#animated-model');
+			const scale = entity.getAttribute('scale');
+			Object.keys(scale).forEach((key) => scale[key] = scale[key] + 1);
+			
+			// every click, we make our model grow in size
+			entity.setAttribute('scale', scale);
+		}
+	});
+}});
 function playPauseVideo(){
 
-if (video.paused)
-    video.play();
+if (vid.paused)
+    vid.play();
   else
-    video.pause();
+    vid.pause();
 }
 </script>
