@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" name="apple-mobile-web-app-capable" content="yes">
+	<meta charset="UTF-8" name="apple-mobile-web-app-capable" content="yes">
     <title>AR experiment</title>
 	<!-- include A-Frame obviously -->
 <script src="https://aframe.io/releases/0.8.0/aframe.min.js"></script>
@@ -71,6 +71,7 @@
 			</a-entity>
 		</a-marker>
 		 <a-marker type='pattern' url='m1.patt'>
+			 
 				<a-video src="#smartpilot" width="1.78" height="1" rotation="270 0 0" play="true"></a-video>
 		  </a-entity>
 		</a-marker>
@@ -79,15 +80,21 @@
 	</a-scene>
 </body>
 </html>
+<script type="text/javascript">
+    var scene = document.querySelector("a-scene");
+    var vid = document.getElementById("smartpilot");
 
+    if (scene.hasLoaded) {
+      run();
+    } else {
+      scene.addEventListener("loaded", run);
+    }
 
-<script>
-  function playVideo () {
-    var els = document.querySelectorAll('.video')
-    Array.prototype.slice.call(els).forEach(function(el) {
-      el.components.material.material.map.image.play()
-    })
-  }
-
-  document.querySelector('.a-enter-vr-button').addEventListener('click', playVideo)
+    function run () {
+        scene.querySelector(".a-enter-vr-button").addEventListener("click", function(e){
+            console.log("VR Mode entered");
+            this.style.display = "none";
+            vid.play();
+        }, false);
+    }
 </script>
