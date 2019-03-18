@@ -71,9 +71,8 @@
 			</a-entity>
 		</a-marker>
 		 <a-marker type='pattern' url='m1.patt'>
-			 
+			 <a id="video-button" href="#">Play video</a>
 				<a-video src="#smartpilot" width="1.78" height="1" rotation="270 0 0" play="true"></a-video>
-		  </a-entity>
 		</a-marker>
 
 		<a-entity camera></a-entity> 
@@ -91,7 +90,7 @@
     }
 
     function run () {
-        scene.querySelector(".a-enter-vr-button").addEventListener("click", function(e){
+        scene.querySelector(".video-button").addEventListener("click", function(e){
             console.log("VR Mode entered");
             this.style.display = "none";
             vid.play();
