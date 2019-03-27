@@ -20,14 +20,15 @@
 			<a-asset-item id="sp-obj" src="Obj.obj"></a-asset-item>
 			<a-asset-item id="ypso-obj" src="ypso-logo.obj"></a-asset-item>
 			<a-asset-item id="ypso-mtl" src="ypso-logo.mtl"></a-asset-item>
-			<a-asset-item id="ypsomate-gltf" src="Ypsomate-kpl-2015-low.gltf"></a-asset-item>
+			<a-asset-item id="ypsomate-gltf" src="Ypsomate-kpl-2015-2.gltf"></a-asset-item>
+			<a-asset-item id="ypsomate-gltf-green" src="Ypsomate-green.gltf"></a-asset-item>
 			<img id="texture" src="ypso-logo.png">
 			<img id="image-step1" src="YM_USE_remove.png">
 			<img id="image-step2" src="YM_USE_inject.png">
 			<img id="image-vr" src="vr-infographic.jpg">
 			<img id="image-vr-vive" src="vr_vive.jpg">
 			<video id="video" webkit-playsinline playsinline loop="true" src="smartpilot_short.mp4"></video>
-			<video id="video_jtb_blood" webkit-playsinline playsinline loop="true" src="jtb-blutzuckermessung.mp4"></video>
+			<video id="video_jtb_blood" webkit-playsinline playsinline loop="true" src="jtb-blutzuckermessung_small.mp4"></video>
 			
 			<a-asset-item id="animated-asset" src="https://raw.githubusercontent.com/nicolocarpignoli/nicolocarpignoli.github.io/master/ar-playground/models/CesiumMan.gltf"></a-asset-item>
 		</a-assets>
@@ -68,30 +69,31 @@
 				<a-text value="Expiry. Date:  2018-12-21" position="0.4 0.63 0" width="3" color="black"></a-text>
 			</a-entity>
 		</a-marker>
-		 <a-marker type='pattern' markerhandler2 emitevents="true" url='marker_y.patt' id="videoMarker">
+		<a-marker type='pattern' id="ypsomateMarker" url='marker_y.patt' >
+				<a-entity id="ypsomateModel" gltf-model="#ypsomate-gltf" scale="2 2 2"></a-entity>
+		</a-marker>
+		<a-marker type='pattern' id="ypsomateMarker" url='marker_p.patt' >
+				<a-entity id="ypsomateModel" gltf-model="#ypsomate-gltf-green" scale="2 2 2"></a-entity>
+		</a-marker>
+		 <a-marker type='pattern' markerhandler2 emitevents="true" url='marker_s.patt' id="videoMarker">
 				<a-video id="videoScreen" src="#video" width="5.34" height="3" rotation="270 0 0" play="true"></a-video>
 		</a-marker>
-		<a-marker type='pattern' markerhandler2 emitevents="true" url='marker_p.patt' id="videoMarker2">
-			<a-video id="videoScreen2" src="#video_jtb_blood" width="5.34" height="3" rotation="270 0 0" play="true"></a-video>
-	</a-marker>
-	<a-marker type='pattern' url='marker_s.patt'>
+		
+	<a-marker type='pattern' url='marker_m.patt'>
 		<a-image rotation="270 0 0" src="#image-vr-vive" ></a-image>
 </a-marker>
-<!--
-		<a-marker markerhandler emitevents="true" cursor="rayOrigin: mouse" id="animated-marker" type='pattern' url='marker_m.patt' value='6'>
+<a-marker type='pattern' url='marker_e.patt'>
+		<a-entity text="value:hello world; color:red; width:2" rotation="270 0 0" position-interval></a-entity>
+	</a-marker>
+		<a-marker markerhandler emitevents="true" cursor="rayOrigin: mouse" id="animated-marker" type='pattern' url='marker_d.patt' value='6'>
 				<a-entity
 					id="animated-model"
 					gltf-model="#animated-asset"
 					scale="2" animation-mixer>
 				</a-entity>
 	</a-marker>
--->
-
-	<a-marker type='pattern' url='marker_m.patt'>
-			<a-entity gltf-model="#ypsomate-gltf"></a-entity>
-	</a-marker>
-<a-marker type='pattern' url='marker_e.patt'>
-		<a-entity text="value:hello world; color:red; width:2" rotation="270 0 0" position-interval></a-entity>
+	<a-marker type='pattern' markerhandler2 emitevents="true" url='marker_jtb.patt' id="videoMarker2">
+			<a-video id="videoScreen2" src="#video_jtb_blood" width="5.34" height="3" rotation="270 0 0" play="true"></a-video>
 	</a-marker>
 
 		<a-entity camera></a-entity> 
@@ -103,11 +105,14 @@
 	
     var vid = document.getElementById("video");
 	var video_jtb_blood = document.getElementById("video_jtb_blood");
+	var ypsomateModel = document.getElementById("ypsomateModel");
 
 AFRAME.registerComponent('markerhandler2', {
 	init: function() {
 	const videoMarker = document.querySelector("#videoMarker");
 	const videoMarker2 = document.querySelector("#videoMarker2");
+	
+	
 
 	videoMarker.addEventListener('click', function(ev){
 			if (videoMarker.object3D.visible == true && ev.detail.cursorEl) {
@@ -136,9 +141,26 @@ init: function() {
 			entity.setAttribute('scale', scale);
 		}
 	});
+
+	const ypsomateMarker = document.querySelector("#ypsomateMarker");
+	ypsomateMarker.addEventListener('click', function(ev){
+			if (ypsomateMarker.object3D.visible == true && ev.detail.cursorEl) {
+				console.log("clickkkk");
+				console.log(ypsomateModel.getAttribute('gltf-model'));
+				
+				if(ypsomateModel.getAttribute('gltf-model') == 'Ypsomate-kpl-2015-2.gltf'){
+					ypsomateModel.setAttribute('gltf-model', '#ypsomate-gltf-green' );
+				}
+				else{
+					ypsomateModel.setAttribute('gltf-model', '#ypsomate-gltf' );
+				}
+				
+			}
+	});
 }});
 
 AFRAME.registerComponent('position-interval', {
+	/*
   tick: function (t) {
     var entity = this.el;
 
@@ -167,6 +189,8 @@ request.onload = function() {
 request.send()
 
   }
+  */
 });
+
 
 </script>
