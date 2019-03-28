@@ -172,12 +172,20 @@ function initialize()
 	
 	// textures from http://www.humus.name/
 	let skyMaterialArray = [
+	new THREE.MeshBasicMaterial( { map: loader.load("images/technikum/px.png"), side: THREE.BackSide } ),
+		new THREE.MeshBasicMaterial( { map: loader.load("images/technikum/nx.png"), side: THREE.BackSide } ),
+		new THREE.MeshBasicMaterial( { map: loader.load("images/technikum/py.png"), side: THREE.BackSide } ),
+		new THREE.MeshBasicMaterial( { map: loader.load("images/technikum/ny.png"), side: THREE.BackSide } ),
+		new THREE.MeshBasicMaterial( { map: loader.load("images/technikum/pz.png"), side: THREE.BackSide } ),
+		new THREE.MeshBasicMaterial( { map: loader.load("images/technikum/nz.png"), side: THREE.BackSide } ),
+		/*
 		new THREE.MeshBasicMaterial( { map: loader.load("images/mountain/posx.jpg"), side: THREE.BackSide } ),
 		new THREE.MeshBasicMaterial( { map: loader.load("images/mountain/negx.jpg"), side: THREE.BackSide } ),
 		new THREE.MeshBasicMaterial( { map: loader.load("images/mountain/posy.jpg"), side: THREE.BackSide } ),
 		new THREE.MeshBasicMaterial( { map: loader.load("images/mountain/negy.jpg"), side: THREE.BackSide } ),
 		new THREE.MeshBasicMaterial( { map: loader.load("images/mountain/posz.jpg"), side: THREE.BackSide } ),
 		new THREE.MeshBasicMaterial( { map: loader.load("images/mountain/negz.jpg"), side: THREE.BackSide } ),
+		*/
 	];
 	let skyMesh = new THREE.Mesh(
 		new THREE.CubeGeometry(30,30,30),
