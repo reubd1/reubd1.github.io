@@ -69,11 +69,11 @@
 				<a-text value="Expiry. Date:  2018-12-21" position="0.4 0.63 0" width="3" color="black"></a-text>
 			</a-entity>
 		</a-marker>
-		<a-marker type='pattern' id="ypsomateMarker" url='marker_y.patt' >
-				<a-entity id="ypsomateModel" gltf-model="#ypsomate-gltf" scale="2 2 2"></a-entity>
+		<a-marker type='pattern' id="ypsomateMarker" markerhandler url='marker_y.patt' >
+				<a-entity id="ypsomateModel" gltf-model="#ypsomate-gltf" scale="4 4 4"></a-entity>
 		</a-marker>
 		<a-marker type='pattern' id="ypsomateMarker" url='marker_p.patt' >
-				<a-entity id="ypsomateModel" gltf-model="#ypsomate-gltf-green" scale="2 2 2"></a-entity>
+				<a-entity id="ypsomateModel2" gltf-model="#ypsomate-gltf-green" scale="2 2 2"></a-entity>
 		</a-marker>
 		 <a-marker type='pattern' markerhandler2 emitevents="true" url='marker_s.patt' id="videoMarker">
 				<a-video id="videoScreen" src="#video" width="5.34" height="3" rotation="270 0 0" play="true"></a-video>
@@ -142,8 +142,8 @@ init: function() {
 		}
 	});
 
-	const ypsomateMarker = document.querySelector("#ypsomateMarker");
-	ypsomateMarker.addEventListener('click', function(ev){
+	const ypsomateMarker = document.querySelector("#ypsomateMarker2");
+	ypsomateMarker.addEventListener('touchstart', function(ev){
 			if (ypsomateMarker.object3D.visible == true && ev.detail.cursorEl) {
 				console.log("clickkkk");
 				console.log(ypsomateModel.getAttribute('gltf-model'));
