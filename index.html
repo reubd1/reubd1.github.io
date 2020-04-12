@@ -1,202 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8" name="apple-mobile-web-app-capable" content="yes">
-	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>AR experiment</title>
-	 <script src="https://aframe.io/releases/1.0.0/aframe.min.js"></script>
+<html>
+    <script src="https://aframe.io/releases/1.0.0/aframe.min.js"></script>
     <!-- we import arjs version without NFT but with marker + location based support -->
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-<!-- include ar.js for A-Frame -->
-<script src="https://rawgit.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js"></script>
-<style>
-		#arjsDebugUIContainer {
-		  display: none;
-		}
-		</style>
-	</head>
-<body style='margin : 0px; overflow: hidden;'>
-	 <a-scene id="a-scene" embedded arjs='sourceType: webcam; debugUiEnabled:false;'>
-		 <a-assets>
-			<!--a-asset-item id="sp-obj" src="Obj.obj"></a-asset-item>
-			<a-asset-item id="ypso-obj" src="ypso-logo.obj"></a-asset-item>
-			<a-asset-item id="ypso-mtl" src="ypso-logo.mtl"></a-asset-item>
-			<a-asset-item id="ypsomate-gltf" src="Ypsomate-kpl-2015-2.glb"></a-asset-item>
-			<a-asset-item id="ypsomate-gltf-green" src="Ypsomate-green.glb"></a-asset-item> -->
-			<!--img id="texture" src="ypso-logo.png">
-			<img id="image-step1" src="YM_USE_remove.png">
-			<img id="image-step2" src="YM_USE_inject.png">
-			<img id="image-vr" src="vr-infographic.jpg">
-			<img id="image-vr-vive" src="vr_vive.jpg">-->
-			<img id="image-dr" src="image-dr.jpg">
-			<!-- id="video" muted webkit-playsinline playsinline loop="true" src="smartpilot_short.mp4"></video>
-			<video id="video_jtb_blood" muted crossOrigin="anonymous" webkit-playsinline playsinline loop="true" src="jtb-blutzuckermessung_small.mp4"></video>-->
-			
-		</a-assets>
-
-		<a-marker  type='pattern' url='pattern-marker2.patt'>
-			<a-entity obj-model="obj: #sp-obj"
-			      rotation="0 90 0" position="0 0.5 0" scale="0.01 0.01 0.01" >
-			</a-entity>
-		</a-marker>
-		<a-marker  type='pattern' url='pattern-dr.patt'>
-			<a-entity>
-				<a-image rotation="270 0 0" scale="5 5 5" src="#image-dr"></a-image>
-			</a-entity>
-		</a-marker>
-
-		<a-marker type='pattern' url='pattern-marker.patt'>
-			<a-box src="#texture" position='0 0.5 0' material='color: silver;'></a-box>
-			<a-text width="5" height="auto" color="red" position='-0.5 1.2 0' value="Ypsomed"></a-text>
-			<a-entity obj-model="obj: #ypso-obj; mtl: #ypso-mtl" 
-			      rotation="0 90 0" position="0 0.5 0" scale="0.01 0.01 0.01" >
-			</a-entity>
-
-		</a-marker>
-
-		<a-marker type='pattern' url='pattern-marker3.patt'>
-			<a-entity>
-				<a-curvedimage position="1 1 0" rotation="-270 90 -90" src="#image-step1"  height="3.0" radius="5.7" theta-length="72"
-				  scale="0.8 0.8 0.8"></a-image>
-			</a-entity>
-			<a-entity>
-				<a-curvedimage position="0 1 0" rotation="0 90 -90" src="#image-step2"  height="3.0" radius="5.7" theta-length="72"
-				  scale="0.8 0.8 0.8"></a-image>
-			</a-entity>
-			<!--   pillars -->
-			<a-entity rotation="-90 90 -90">
-				<a-cylinder position="0.2 0.5 -0.1" radius="0.1" height="2" color="blue"></a-cylinder>
-
-				<!--   banner -->
-				<a-box color="firebrick" position="1.3 1 -0.1"  depth="0.1" height="1" width="2"></a-box>
-				<a-text value="Product: YpsoMate" position="0.4 1.3 0" width="4" color="black"></a-text>
-				<a-text value="Medicament: XYZ" position="0.4 1.1 0" width="4" color="black"></a-text>
-				<a-text value="Manuf. Date: 2018-06-21" position="0.4 0.8 0" width="3" color="black"></a-text>
-				<a-text value="Expiry. Date:  2018-12-21" position="0.4 0.63 0" width="3" color="black"></a-text>
-			</a-entity>
-		</a-marker>
-		<a-marker type='pattern' id="ypsomateMarker2" markerhandler url='marker_y.patt' >
-				<a-entity id="ypsomateModel" gltf-model="#ypsomate-gltf" scale="8 8 8"></a-entity>
-		</a-marker>
-		<a-marker type='pattern' id="ypsomateMarker" url='marker_p.patt' >
-				<a-entity id="ypsomateModel2" gltf-model="#ypsomate-gltf-green" scale="8 8 8"></a-entity>
-		</a-marker>
-		 <a-marker type='pattern' markerhandler2 emitevents="true" url='marker_s.patt' id="videoMarker">
-				<a-video id="videoScreen" src="#video" width="5.34" height="3" rotation="270 0 0" play="true"></a-video>
-		</a-marker>
-		
-	<a-marker type='pattern' url='marker_m.patt'>
-		<a-image rotation="270 0 0" src="#image-vr-vive" ></a-image>
-</a-marker>
-<a-marker type='pattern' url='marker_e.patt'>
-		<a-entity text="value:hello world; color:red; width:2" rotation="270 0 0" position-interval></a-entity>
-	</a-marker>
-		<a-marker markerhandler emitevents="true" cursor="rayOrigin: mouse" id="animated-marker" type='pattern' url='marker_d.patt' value='6'>
-				<a-entity
-					id="animated-model"
-					gltf-model="#animated-asset"
-					scale="2" animation-mixer>
+    <body style="margin : 0px; overflow: hidden;">
+        <a-scene embedded arjs>
+			<a-assets>
+				<img id="image-dr" src="image-dr.jpg">
+			</a-assets>
+			<a-marker  type='pattern' url='pattern-dr.patt'>
+				<a-entity>
+					<a-image rotation="270 0 0" scale="5 5 5" src="#image-dr"></a-image>
 				</a-entity>
-	</a-marker>
-	<a-marker type='pattern' markerhandler2 emitevents="true" url='marker_jtb.patt' id="videoMarker2">
-			<a-video id="videoScreen2" src="#video_jtb_blood" width="5.34" height="3" rotation="270 0 0" play="true"></a-video>
-	</a-marker>
-
-		<a-entity camera></a-entity> 
-	</a-scene>
-</body>
+			</a-marker>
+			<a-entity camera></a-entity>
+        </a-scene>
+    </body>
 </html>
-<script type="text/javascript">
-
-	
-    var vid = document.getElementById("video");
-	var video_jtb_blood = document.getElementById("video_jtb_blood");
-	var ypsomateModel = document.getElementById("ypsomateModel");
-
-AFRAME.registerComponent('markerhandler2', {
-	init: function() {
-	const videoMarker = document.querySelector("#videoMarker");
-	const videoMarker2 = document.querySelector("#videoMarker2");
-	
-	
-
-	videoMarker.addEventListener('click', function(ev){
-			if (videoMarker.object3D.visible == true && ev.detail.cursorEl) {
-					vid.play();
-			}
-	});
-	videoMarker2.addEventListener('click', function(ev){
-			if (videoMarker2.object3D.visible == true && ev.detail.cursorEl) {
-				video_jtb_blood.play();
-			}
-	});
-}});
-
-AFRAME.registerComponent('markerhandler', {
-
-init: function() {
-	const animatedMarker = document.querySelector("#animated-marker");
-
-	animatedMarker.addEventListener('click', function(ev){
-		if (animatedMarker.object3D.visible == true && ev.detail.cursorEl) {
-			const entity = document.querySelector('#animated-model');
-			const scale = entity.getAttribute('scale');
-			Object.keys(scale).forEach((key) => scale[key] = scale[key] + 1);
-			
-			// every click, we make our model grow in size
-			entity.setAttribute('scale', scale);
-		}
-	});
-
-	const ypsomateMarker = document.querySelector("#ypsomateMarker2");
-	ypsomateMarker.addEventListener('touchstart', function(ev){
-			if (ypsomateMarker.object3D.visible == true && ev.detail.cursorEl) {
-				console.log("clickkkk");
-				console.log(ypsomateModel.getAttribute('gltf-model'));
-				
-				if(ypsomateModel.getAttribute('gltf-model') == 'Ypsomate-kpl-2015-2.gltf'){
-					ypsomateModel.setAttribute('gltf-model', '#ypsomate-gltf-green' );
-				}
-				else{
-					ypsomateModel.setAttribute('gltf-model', '#ypsomate-gltf' );
-				}
-				
-			}
-	});
-}});
-
-AFRAME.registerComponent('position-interval', {
-	/*
-  tick: function (t) {
-    var entity = this.el;
-
-    // Run on an interval.
-    if (t - this.time < 1000*5) { return; } 
-    this.time = t;
-
-    // Update position.
-    entity.setAttribute('text', "value:hello world"+t+"; color:red; width:2");
-
-var request = new XMLHttpRequest()
-
-request.open('GET', 'https://transport.opendata.ch/v1/connections?from=oberburg&to=bern&fields[]=connections/from/departure&fields[]=connections/to/arrival', true)
-request.onload = function() {
-  // Begin accessing JSON data here
-  var responseData = JSON.parse(this.response)
-
-  var columns = responseData["connections"];
-
-        console.log(columns[1]);
-		//from[].departure
-		//to[].arrival
-  
-}
-
-request.send()
-
-  }
-  */
-});
 
 
-</script>
+		
+
+		
