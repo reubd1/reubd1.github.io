@@ -3045,15 +3045,6 @@ ARjs.Source.prototype._initSourceWebcam = function (onReady, onError) {
                 }
             }
         };
-		
-		// CUSTOM CODE START
-		var backCam2 = devices.filter(d=>{
-		return d.label && d.label == "camera2 0, facing back";
-		})
-		if (backCam2.length) {
-		userMediaConstraints.video.deviceId = backCam2[0].deviceId
-		}
-		// CUSTOM CODE END
 
         if (null !== _this.parameters.deviceId) {
             userMediaConstraints.video.deviceId = {
@@ -4972,3 +4963,1052 @@ ARjs.MarkersAreaUtils.buildMarkersAreaFileFromResolution = function(trackingBack
 		}
 	}
 }
+//////////////////////////////////////////////////////////////////////////////
+//		arjs-anchor
+//////////////////////////////////////////////////////////////////////////////
+AFRAME.registerComponent('arjs-anchor', {
+    dependencies: ['arjs', 'artoolkit'],
+    schema: {
+        preset: {
+            type: 'string',
+        },
+        markerhelpers: {	// IIF preset === 'area'
+            type: 'boolean',
+            default: false,
+        },
+
+        // controls parameters
+        size: {
+            type: 'number',
+            default: 1
+        },
+        type: {
+            type: 'string',
+        },
+        patternUrl: {
+            type: 'string',
+        },
+        barcodeValue: {
+            type: 'number'
+        },
+        changeMatrixMode: {
+            type: 'string',
+            default: 'modelViewMatrix',
+        },
+        minConfidence: {
+            type: 'number',
+            default: 0.6,
+        },
+        smooth: {
+            type: 'boolean',
+            default: false,
+        },
+        smoothCount: {
+            type: 'number',
+            default: 5,
+        },
+        smoothTolerance: {
+            type: 'number',
+            default: 0.01,
+        },
+        smoothThreshold: {
+            type: 'number',
+            default: 2,
+        },
+    },
+    init: function () {
+        var _this = this
+
+        // get arjsSystem
+        var arjsSystem = this.el.sceneEl.systems.arjs || this.el.sceneEl.systems.artoolkit
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		Code Separator
+        //////////////////////////////////////////////////////////////////////////////
+
+        _this.isReady = false
+        _this._arAnchor = null
+
+        // honor object visibility
+        if (_this.data.changeMatrixMode === 'modelViewMatrix') {
+            _this.el.object3D.visible = false
+        } else if (_this.data.changeMatrixMode === 'cameraTransformMatrix') {
+            _this.el.sceneEl.object3D.visible = false
+        } else console.assert(false)
+
+        // trick to wait until arjsSystem is isReady
+        var startedAt = Date.now()
+        var timerId = setInterval(function () {
+            // wait until the system is isReady
+            if (arjsSystem.isReady === false) return
+
+            clearInterval(timerId)
+
+            //////////////////////////////////////////////////////////////////////////////
+            //		update arProfile
+            //////////////////////////////////////////////////////////////////////////////
+            var arProfile = arjsSystem._arProfile
+
+            // arProfile.changeMatrixMode('modelViewMatrix')
+            arProfile.changeMatrixMode(_this.data.changeMatrixMode)
+
+            // honor this.data.preset
+            var markerParameters = Object.assign({}, arProfile.defaultMarkerParameters)
+
+            if (_this.data.preset === 'hiro') {
+                markerParameters.type = 'pattern'
+                markerParameters.patternUrl = THREEx.ArToolkitContext.baseURL + 'examples/marker-training/examples/pattern-files/pattern-hiro.patt'
+                markerParameters.markersAreaEnabled = false
+            } else if (_this.data.preset === 'kanji') {
+                markerParameters.type = 'pattern'
+                markerParameters.patternUrl = THREEx.ArToolkitContext.baseURL + 'examples/marker-training/examples/pattern-files/pattern-kanji.patt'
+                markerParameters.markersAreaEnabled = false
+            } else if (_this.data.preset === 'area') {
+                markerParameters.type = 'barcode'
+                markerParameters.barcodeValue = 1001
+                markerParameters.markersAreaEnabled = true
+            } else if (_this.data.type === 'barcode') {
+                markerParameters = {
+                    type: _this.data.type,
+                    changeMatrixMode: 'modelViewMatrix',
+                    barcodeValue: _this.data.barcodeValue,
+                    markersAreaEnabled: false
+                }
+            } else if (_this.data.type === 'pattern') {
+                markerParameters.type = _this.data.type
+                markerParameters.patternUrl = _this.data.patternUrl;
+                markerParameters.markersAreaEnabled = false
+            }
+
+            markerParameters.smooth = _this.data.smooth;
+            markerParameters.smoothCount = _this.data.smoothCount;
+            markerParameters.smoothTolerance = _this.data.smoothTolerance;
+            markerParameters.smoothThreshold = _this.data.smoothThreshold;
+
+            //////////////////////////////////////////////////////////////////////////////
+            //		create arAnchor
+            //////////////////////////////////////////////////////////////////////////////
+
+            var arSession = arjsSystem._arSession
+            var arAnchor = _this._arAnchor = new ARjs.Anchor(arSession, markerParameters)
+
+            // it is now considered isReady
+            _this.isReady = true
+
+            //////////////////////////////////////////////////////////////////////////////
+            //		honor .debugUIEnabled
+            //////////////////////////////////////////////////////////////////////////////
+            if (arjsSystem.data.debugUIEnabled) {
+                // get or create containerElement
+                var containerElement = document.querySelector('#arjsDebugUIContainer')
+                if (containerElement === null) {
+                    containerElement = document.createElement('div')
+                    containerElement.id = 'arjsDebugUIContainer'
+                    containerElement.setAttribute('style', 'position: fixed; bottom: 10px; width:100%; text-align: center; z-index: 1; color: grey;')
+                    document.body.appendChild(containerElement)
+                }
+                // create anchorDebugUI
+                var anchorDebugUI = new ARjs.AnchorDebugUI(arAnchor)
+                containerElement.appendChild(anchorDebugUI.domElement)
+            }
+        }, 1000 / 60)
+    },
+    remove: function () {
+    },
+    update: function () {
+    },
+    tick: function () {
+        var _this = this
+        // if not yet isReady, do nothing
+        if (this.isReady === false) return
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		update arAnchor
+        //////////////////////////////////////////////////////////////////////////////
+        var arjsSystem = this.el.sceneEl.systems.arjs || this.el.sceneEl.systems.artoolkit
+        this._arAnchor.update()
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		honor pose
+        //////////////////////////////////////////////////////////////////////////////
+        var arWorldRoot = this._arAnchor.object3d
+        arWorldRoot.updateMatrixWorld(true)
+        arWorldRoot.matrixWorld.decompose(this.el.object3D.position, this.el.object3D.quaternion, this.el.object3D.scale)
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		honor visibility
+        //////////////////////////////////////////////////////////////////////////////
+        if (_this._arAnchor.parameters.changeMatrixMode === 'modelViewMatrix') {
+            var wasVisible = _this.el.object3D.visible
+            _this.el.object3D.visible = this._arAnchor.object3d.visible
+        } else if (_this._arAnchor.parameters.changeMatrixMode === 'cameraTransformMatrix') {
+            var wasVisible = _this.el.sceneEl.object3D.visible
+            _this.el.sceneEl.object3D.visible = this._arAnchor.object3d.visible
+        } else console.assert(false)
+
+        // emit markerFound markerLost
+        if (_this._arAnchor.object3d.visible === true && wasVisible === false) {
+            _this.el.emit('markerFound')
+        } else if (_this._arAnchor.object3d.visible === false && wasVisible === true) {
+            _this.el.emit('markerLost')
+        }
+    }
+})
+
+//////////////////////////////////////////////////////////////////////////////
+//                define some primitives shortcuts
+//////////////////////////////////////////////////////////////////////////////
+
+AFRAME.registerPrimitive('a-anchor', AFRAME.utils.extendDeep({}, AFRAME.primitives.getMeshMixin(), {
+    defaultComponents: {
+        'arjs-anchor': {},
+        'arjs-hit-testing': {},
+    },
+    mappings: {
+        'type': 'arjs-anchor.type',
+        'size': 'arjs-anchor.size',
+        'url': 'arjs-anchor.patternUrl',
+        'value': 'arjs-anchor.barcodeValue',
+        'preset': 'arjs-anchor.preset',
+        'min-confidence': 'arjs-anchor.minConfidence',
+        'marker-helpers': 'arjs-anchor.markerhelpers',
+        'smooth': 'arjs-anchor.smooth',
+        'smooth-count': 'arjs-anchor.smoothCount',
+        'smooth-tolerance': 'arjs-anchor.smoothTolerance',
+        'smooth-threshold': 'arjs-anchor.smoothThreshold',
+
+        'hit-testing-render-debug': 'arjs-hit-testing.renderDebug',
+        'hit-testing-enabled': 'arjs-hit-testing.enabled',
+    }
+}))
+
+AFRAME.registerPrimitive('a-camera-static', AFRAME.utils.extendDeep({}, AFRAME.primitives.getMeshMixin(), {
+    defaultComponents: {
+        'camera': {},
+    },
+    mappings: {
+    }
+}))
+
+//////////////////////////////////////////////////////////////////////////////
+//		backward compatibility
+//////////////////////////////////////////////////////////////////////////////
+// FIXME
+AFRAME.registerPrimitive('a-marker', AFRAME.utils.extendDeep({}, AFRAME.primitives.getMeshMixin(), {
+    defaultComponents: {
+        'arjs-anchor': {},
+        'arjs-hit-testing': {},
+    },
+    mappings: {
+        'type': 'arjs-anchor.type',
+        'size': 'arjs-anchor.size',
+        'url': 'arjs-anchor.patternUrl',
+        'value': 'arjs-anchor.barcodeValue',
+        'preset': 'arjs-anchor.preset',
+        'min-confidence': 'arjs-anchor.minConfidence',
+        'marker-helpers': 'arjs-anchor.markerhelpers',
+        'smooth': 'arjs-anchor.smooth',
+        'smooth-count': 'arjs-anchor.smoothCount',
+        'smooth-tolerance': 'arjs-anchor.smoothTolerance',
+        'smooth-threshold': 'arjs-anchor.smoothThreshold',
+
+        'hit-testing-render-debug': 'arjs-hit-testing.renderDebug',
+        'hit-testing-enabled': 'arjs-hit-testing.enabled',
+    }
+}))
+
+AFRAME.registerPrimitive('a-marker-camera', AFRAME.utils.extendDeep({}, AFRAME.primitives.getMeshMixin(), {
+    defaultComponents: {
+        'arjs-anchor': {
+            changeMatrixMode: 'cameraTransformMatrix'
+        },
+        'camera': {},
+    },
+    mappings: {
+        'type': 'arjs-anchor.type',
+        'size': 'arjs-anchor.size',
+        'url': 'arjs-anchor.patternUrl',
+        'value': 'arjs-anchor.barcodeValue',
+        'preset': 'arjs-anchor.preset',
+        'min-confidence': 'arjs-anchor.minConfidence',
+        'marker-helpers': 'arjs-anchor.markerhelpers',
+    }
+}))
+//////////////////////////////////////////////////////////////////////////////
+//		arjs-hit-testing
+//////////////////////////////////////////////////////////////////////////////
+AFRAME.registerComponent('arjs-hit-testing', {
+	dependencies: ['arjs', 'artoolkit'],
+	schema: {
+		enabled : {
+			type: 'boolean',
+			default: false,
+		},
+		renderDebug : {
+			type: 'boolean',
+			default: false,
+		},
+	},
+	init: function () {
+		var _this = this
+		var arjsSystem = this.el.sceneEl.systems.arjs || this.el.sceneEl.systems.artoolkit
+
+// TODO make it work on cameraTransformMatrix too
+//
+		_this.isReady = false
+		_this._arAnchor = null
+		_this._arHitTesting = null
+
+		// trick to wait until arjsSystem is isReady
+		var startedAt = Date.now()
+		var timerId = setInterval(function(){
+			var anchorEl = _this.el
+			var anchorComponent = anchorEl.components['arjs-anchor']
+			// wait until anchorComponent is isReady
+			if( anchorComponent === undefined || anchorComponent.isReady === false )	return
+
+			clearInterval(timerId)
+
+			//////////////////////////////////////////////////////////////////////////////
+			//		create arAnchor
+			//////////////////////////////////////////////////////////////////////////////
+			var arAnchor = anchorComponent._arAnchor
+			var arSession = arjsSystem._arSession
+			var renderer = arSession.parameters.renderer
+
+			var hitTesting = _this._arHitTesting = new ARjs.HitTesting(arSession)
+			hitTesting.enabled = _this.data.enabled
+
+			_this.isReady = true
+		}, 1000/60)
+	},
+	remove : function(){
+	},
+	update: function () {
+	},
+	tick: function(){
+		var _this = this
+		// if not yet isReady, do nothing
+		if( this.isReady === false )	return
+
+		var arjsSystem = this.el.sceneEl.systems.arjs || this.el.sceneEl.systems.artoolkit
+		var arSession = arjsSystem._arSession
+
+		var anchorEl = _this.el
+		var anchorComponent = anchorEl.components['arjs-anchor']
+		var arAnchor = anchorComponent._arAnchor
+
+
+		var hitTesting = this._arHitTesting
+		var camera = arSession.parameters.camera
+// console.log(camera.position)
+		hitTesting.update(camera, arAnchor.object3d, arAnchor.parameters.changeMatrixMode)
+	}
+});
+AFRAME.registerComponent('gps-camera', {
+    _watchPositionId: null,
+    originCoords: null,
+    currentCoords: null,
+    lookControls: null,
+    heading: null,
+    schema: {
+        simulateLatitude: {
+            type: 'number',
+            default: 0,
+        },
+        simulateLongitude: {
+            type: 'number',
+            default: 0,
+        },
+        simulateAltitude: {
+            type: 'number',
+            default: 0,
+        },
+        positionMinAccuracy: {
+            type: 'int',
+            default: 100,
+        },
+        alert: {
+            type: 'boolean',
+            default: false,
+        },
+        minDistance: {
+            type: 'int',
+            default: 0,
+        }
+    },
+    update: function() {
+        if (this.data.simulateLatitude !== 0 && this.data.simulateLongitude !== 0) {
+            localPosition = Object.assign({}, this.currentCoords || {});
+            localPosition.longitude = this.data.simulateLongitude;
+            localPosition.latitude = this.data.simulateLatitude;
+            localPosition.altitude = this.data.simulateAltitude;
+            this.currentCoords = localPosition;
+
+            // re-trigger initialization for new origin
+            this.originCoords = null;
+            this._updatePosition();
+        }
+    },
+    init: function () {
+        if (!this.el.components['look-controls']) {
+            return;
+        }
+
+        this.loader = document.createElement('DIV');
+        this.loader.classList.add('arjs-loader');
+        document.body.appendChild(this.loader);
+
+        window.addEventListener('gps-entity-place-added', function () {
+            // if places are added after camera initialization is finished
+            if (this.originCoords) {
+                window.dispatchEvent(new CustomEvent('gps-camera-origin-coord-set'));
+            }
+            if (this.loader && this.loader.parentElement) {
+                document.body.removeChild(this.loader)
+            }
+        }.bind(this));
+
+        this.lookControls = this.el.components['look-controls'];
+
+        // listen to deviceorientation event
+        var eventName = this._getDeviceOrientationEventName();
+        this._onDeviceOrientation = this._onDeviceOrientation.bind(this);
+
+        // if Safari
+        if (!!navigator.userAgent.match(/Version\/[\d.]+.*Safari/)) {
+            // iOS 13+
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                var handler = function () {
+                    console.log('Requesting device orientation permissions...')
+                    DeviceOrientationEvent.requestPermission();
+                    document.removeEventListener('touchend', handler);
+                };
+
+                document.addEventListener('touchend', function () { handler() }, false);
+
+                alert('After camera permission prompt, please tap the screen to activate geolocation.');
+            } else {
+                var timeout = setTimeout(function () {
+                    alert('Please enable device orientation in Settings > Safari > Motion & Orientation Access.')
+                }, 750);
+                window.addEventListener(eventName, function () {
+                    clearTimeout(timeout);
+                });
+            }
+        }
+
+        window.addEventListener(eventName, this._onDeviceOrientation, false);
+
+        this._watchPositionId = this._initWatchGPS(function (position) {
+            if (this.data.simulateLatitude !== 0 && this.data.simulateLongitude !== 0) {
+                localPosition = Object.assign({}, position.coords);
+                localPosition.longitude = this.data.simulateLongitude;
+                localPosition.latitude = this.data.simulateLatitude;
+                localPosition.altitude = this.data.simulateAltitude;
+                this.currentCoords = localPosition;
+            }
+            else {
+                this.currentCoords = position.coords;
+            }
+
+            this._updatePosition();
+        }.bind(this));
+    },
+
+    tick: function () {
+        if (this.heading === null) {
+            return;
+        }
+        this._updateRotation();
+    },
+
+    remove: function () {
+        if (this._watchPositionId) {
+            navigator.geolocation.clearWatch(this._watchPositionId);
+        }
+        this._watchPositionId = null;
+
+        var eventName = this._getDeviceOrientationEventName();
+        window.removeEventListener(eventName, this._onDeviceOrientation, false);
+    },
+
+    /**
+     * Get device orientation event name, depends on browser implementation.
+     * @returns {string} event name
+     */
+    _getDeviceOrientationEventName: function () {
+        if ('ondeviceorientationabsolute' in window) {
+            var eventName = 'deviceorientationabsolute'
+        } else if ('ondeviceorientation' in window) {
+            var eventName = 'deviceorientation'
+        } else {
+            var eventName = ''
+            console.error('Compass not supported')
+        }
+
+        return eventName
+    },
+
+    /**
+     * Get current user position.
+     *
+     * @param {function} onSuccess
+     * @param {function} onError
+     * @returns {Promise}
+     */
+    _initWatchGPS: function (onSuccess, onError) {
+        if (!onError) {
+            onError = function (err) {
+                console.warn('ERROR(' + err.code + '): ' + err.message)
+
+                if (err.code === 1) {
+                    // User denied GeoLocation, let their know that
+                    alert('Please activate Geolocation and refresh the page. If it is already active, please check permissions for this website.');
+                    return;
+                }
+
+                if (err.code === 3) {
+                    alert('Cannot retrieve GPS position. Signal is absent.');
+                    return;
+                }
+            };
+        }
+
+        if ('geolocation' in navigator === false) {
+            onError({ code: 0, message: 'Geolocation is not supported by your browser' });
+            return Promise.resolve();
+        }
+
+        // https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/watchPosition
+        return navigator.geolocation.watchPosition(onSuccess, onError, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 27000,
+        });
+    },
+
+    /**
+     * Update user position.
+     *
+     * @returns {void}
+     */
+    _updatePosition: function () {
+        // don't update if accuracy is not good enough
+        if (this.currentCoords.accuracy > this.data.positionMinAccuracy) {
+            if (this.data.alert && !document.getElementById('alert-popup')) {
+                var popup = document.createElement('div');
+                popup.innerHTML = 'GPS signal is very poor. Try move outdoor or to an area with a better signal.'
+                popup.setAttribute('id', 'alert-popup');
+                document.body.appendChild(popup);
+            }
+            return;
+        }
+
+        var alertPopup = document.getElementById('alert-popup');
+        if (this.currentCoords.accuracy <= this.data.positionMinAccuracy && alertPopup) {
+            document.body.removeChild(alertPopup);
+        }
+
+        if (!this.originCoords) {
+            // first camera initialization
+            this.originCoords = this.currentCoords;
+            this._setPosition();
+
+            var loader = document.querySelector('.arjs-loader');
+            if (loader) {
+                loader.remove();
+            }
+            window.dispatchEvent(new CustomEvent('gps-camera-origin-coord-set'));
+        } else {
+            this._setPosition();
+        }
+    },
+    _setPosition: function () {
+        var position = this.el.getAttribute('position');
+
+        // compute position.x
+        var dstCoords = {
+            longitude: this.currentCoords.longitude,
+            latitude: this.originCoords.latitude,
+        };
+
+        position.x = this.computeDistanceMeters(this.originCoords, dstCoords);
+        position.x *= this.currentCoords.longitude > this.originCoords.longitude ? 1 : -1;
+
+        // compute position.z
+        var dstCoords = {
+            longitude: this.originCoords.longitude,
+            latitude: this.currentCoords.latitude,
+        }
+
+        position.z = this.computeDistanceMeters(this.originCoords, dstCoords);
+        position.z *= this.currentCoords.latitude > this.originCoords.latitude ? -1 : 1;
+
+        // update position
+        this.el.setAttribute('position', position);
+
+        window.dispatchEvent(new CustomEvent('gps-camera-update-position', { detail: { position: this.currentCoords, origin: this.originCoords } }));
+    },
+    /**
+     * Returns distance in meters between source and destination inputs.
+     *
+     *  Calculate distance, bearing and more between Latitude/Longitude points
+     *  Details: https://www.movable-type.co.uk/scripts/latlong.html
+     *
+     * @param {Position} src
+     * @param {Position} dest
+     * @param {Boolean} isPlace
+     *
+     * @returns {number} distance | Number.MAX_SAFE_INTEGER
+     */
+    computeDistanceMeters: function (src, dest, isPlace) {
+        var dlongitude = THREE.Math.degToRad(dest.longitude - src.longitude);
+        var dlatitude = THREE.Math.degToRad(dest.latitude - src.latitude);
+
+        var a = (Math.sin(dlatitude / 2) * Math.sin(dlatitude / 2)) + Math.cos(THREE.Math.degToRad(src.latitude)) * Math.cos(THREE.Math.degToRad(dest.latitude)) * (Math.sin(dlongitude / 2) * Math.sin(dlongitude / 2));
+        var angle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var distance = angle * 6378160;
+
+        // if function has been called for a place, and if it's too near and a min distance has been set,
+        // return max distance possible - to be handled by the  method caller
+        if (isPlace && this.data.minDistance && this.data.minDistance > 0 && distance < this.data.minDistance) {
+            return Number.MAX_SAFE_INTEGER;
+        }
+
+        return distance;
+    },
+
+    /**
+     * Compute compass heading.
+     *
+     * @param {number} alpha
+     * @param {number} beta
+     * @param {number} gamma
+     *
+     * @returns {number} compass heading
+     */
+    _computeCompassHeading: function (alpha, beta, gamma) {
+
+        // Convert degrees to radians
+        var alphaRad = alpha * (Math.PI / 180);
+        var betaRad = beta * (Math.PI / 180);
+        var gammaRad = gamma * (Math.PI / 180);
+
+        // Calculate equation components
+        var cA = Math.cos(alphaRad);
+        var sA = Math.sin(alphaRad);
+        var sB = Math.sin(betaRad);
+        var cG = Math.cos(gammaRad);
+        var sG = Math.sin(gammaRad);
+
+        // Calculate A, B, C rotation components
+        var rA = - cA * sG - sA * sB * cG;
+        var rB = - sA * sG + cA * sB * cG;
+
+        // Calculate compass heading
+        var compassHeading = Math.atan(rA / rB);
+
+        // Convert from half unit circle to whole unit circle
+        if (rB < 0) {
+            compassHeading += Math.PI;
+        } else if (rA < 0) {
+            compassHeading += 2 * Math.PI;
+        }
+
+        // Convert radians to degrees
+        compassHeading *= 180 / Math.PI;
+
+        return compassHeading;
+    },
+
+    /**
+     * Handler for device orientation event.
+     *
+     * @param {Event} event
+     * @returns {void}
+     */
+    _onDeviceOrientation: function (event) {
+        if (event.webkitCompassHeading !== undefined) {
+            if (event.webkitCompassAccuracy < 50) {
+                this.heading = event.webkitCompassHeading;
+            } else {
+                console.warn('webkitCompassAccuracy is event.webkitCompassAccuracy');
+            }
+        } else if (event.alpha !== null) {
+            if (event.absolute === true || event.absolute === undefined) {
+                this.heading = this._computeCompassHeading(event.alpha, event.beta, event.gamma);
+            } else {
+                console.warn('event.absolute === false');
+            }
+        } else {
+            console.warn('event.alpha === null');
+        }
+    },
+
+    /**
+     * Update user rotation data.
+     *
+     * @returns {void}
+     */
+    _updateRotation: function () {
+        var heading = 360 - this.heading;
+        var cameraRotation = this.el.getAttribute('rotation').y;
+        var yawRotation = THREE.Math.radToDeg(this.lookControls.yawObject.rotation.y);
+        var offset = (heading - (cameraRotation - yawRotation)) % 360;
+        this.lookControls.yawObject.rotation.y = THREE.Math.degToRad(offset);
+    },
+});
+AFRAME.registerComponent('gps-entity-place', {
+    _cameraGps: null,
+    schema: {
+        longitude: {
+            type: 'number',
+            default: 0,
+        },
+        latitude: {
+            type: 'number',
+            default: 0,
+        }
+    },
+    remove: function() {
+        // cleaning listeners when the entity is removed from the DOM
+        window.removeEventListener('gps-camera-origin-coord-set', this.coordSetListener);
+        window.removeEventListener('gps-camera-update-position', this.updatePositionListener);
+    },
+    init: function() {
+        this.coordSetListener = () => {
+            if (!this._cameraGps) {
+                var camera = document.querySelector('[gps-camera]');
+                if (!camera.components['gps-camera']) {
+                    console.error('gps-camera not initialized')
+                    return;
+                }
+                this._cameraGps = camera.components['gps-camera'];
+            }
+            this._updatePosition();
+        };
+
+        this.updatePositionListener = (ev) => {
+            if (!this.data || !this._cameraGps) {
+                return;
+            }
+
+            var dstCoords = {
+                longitude: this.data.longitude,
+                latitude: this.data.latitude,
+            };
+
+            // it's actually a 'distance place', but we don't call it with last param, because we want to retrieve distance even if it's < minDistance property
+            var distanceForMsg = this._cameraGps.computeDistanceMeters(ev.detail.position, dstCoords);
+
+            this.el.setAttribute('distance', distanceForMsg);
+            this.el.setAttribute('distanceMsg', formatDistance(distanceForMsg));
+            this.el.dispatchEvent(new CustomEvent('gps-entity-place-update-positon', { detail: { distance: distanceForMsg } }));
+
+            var actualDistance = this._cameraGps.computeDistanceMeters(ev.detail.position, dstCoords, true);
+
+            if (actualDistance === Number.MAX_SAFE_INTEGER) {
+                this.hideForMinDistance(this.el, true);
+            } else {
+                this.hideForMinDistance(this.el, false);
+            }
+        };
+
+        window.addEventListener('gps-camera-origin-coord-set', this.coordSetListener);
+        window.addEventListener('gps-camera-update-position', this.updatePositionListener);
+
+        this._positionXDebug = 0;
+
+        window.dispatchEvent(new CustomEvent('gps-entity-place-added', { detail: { component: this.el } }));
+    },
+    /**
+     * Hide entity according to minDistance property
+     * @returns {void}
+     */
+    hideForMinDistance: function(el, hideEntity) {
+        if (hideEntity) {
+            el.setAttribute('visible', 'false');
+        } else {
+            el.setAttribute('visible', 'true');
+        }
+    },
+    /**
+     * Update place position
+     * @returns {void}
+     */
+    _updatePosition: function() {
+        var position = { x: 0, y: this.el.getAttribute('position').y || 0, z: 0 }
+        var hideEntity = false;
+
+        // update position.x
+        var dstCoords = {
+            longitude: this.data.longitude,
+            latitude: this._cameraGps.originCoords.latitude,
+        };
+
+        position.x = this._cameraGps.computeDistanceMeters(this._cameraGps.originCoords, dstCoords);
+
+        this._positionXDebug = position.x;
+
+        position.x *= this.data.longitude > this._cameraGps.originCoords.longitude ? 1 : -1;
+
+        // update position.z
+        var dstCoords = {
+            longitude: this._cameraGps.originCoords.longitude,
+            latitude: this.data.latitude,
+        };
+
+        position.z = this._cameraGps.computeDistanceMeters(this._cameraGps.originCoords, dstCoords);
+
+        position.z *= this.data.latitude > this._cameraGps.originCoords.latitude ? -1 : 1;
+
+        if (position.y !== 0) {
+            var altitude = this._cameraGps.originCoords.altitude !== undefined ? this._cameraGps.originCoords.altitude : 0;
+            position.y = position.y - altitude;
+        }
+
+        // update element's position in 3D world
+        this.el.setAttribute('position', position);
+    },
+});
+
+/**
+ * Format distances string
+ *
+ * @param {String} distance
+ */
+function formatDistance(distance) {
+    distance = distance.toFixed(0);
+
+    if (distance >= 1000) {
+        return (distance / 1000) + ' kilometers';
+    }
+
+    return distance + ' meters';
+};
+AFRAME.registerSystem('arjs', {
+    schema: {
+        trackingMethod: {
+            type: 'string',
+            default: 'best',
+        },
+        debugUIEnabled: {
+            type: 'boolean',
+            default: false,
+        },
+        areaLearningButton: {
+            type: 'boolean',
+            default: true,
+        },
+        performanceProfile: {
+            type: 'string',
+            default: 'default',
+        },
+        labelingMode: {
+            type: 'string',
+            default: '',
+        },
+        // old parameters
+        debug: {
+            type: 'boolean',
+            default: false
+        },
+        detectionMode: {
+            type: 'string',
+            default: '',
+        },
+        matrixCodeType: {
+            type: 'string',
+            default: '',
+        },
+        patternRatio: {
+            type: 'number',
+            default: -1,
+        },
+        cameraParametersUrl: {
+            type: 'string',
+            default: '',
+        },
+        maxDetectionRate: {
+            type: 'number',
+            default: -1
+        },
+        sourceType: {
+            type: 'string',
+            default: '',
+        },
+        sourceUrl: {
+            type: 'string',
+            default: '',
+        },
+        sourceWidth: {
+            type: 'number',
+            default: -1
+        },
+        sourceHeight: {
+            type: 'number',
+            default: -1
+        },
+        deviceId: {
+            type: 'string',
+            default: ''
+        },
+        displayWidth: {
+            type: 'number',
+            default: -1
+        },
+        displayHeight: {
+            type: 'number',
+            default: -1
+        },
+        canvasWidth: {
+            type: 'number',
+            default: -1
+        },
+        canvasHeight: {
+            type: 'number',
+            default: -1
+        },
+    },
+
+    //////////////////////////////////////////////////////////////////////////////
+    //		Code Separator
+    //////////////////////////////////////////////////////////////////////////////
+
+    init: function () {
+        var _this = this
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		setup arProfile
+        //////////////////////////////////////////////////////////////////////////////
+
+        var arProfile = this._arProfile = new ARjs.Profile()
+            .trackingMethod(this.data.trackingMethod)
+            .performance(this.data.performanceProfile)
+            .defaultMarker()
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		honor this.data and setup arProfile with it
+        //////////////////////////////////////////////////////////////////////////////
+
+        // honor this.data and push what has been modified into arProfile
+        if (this.data.debug !== false) arProfile.contextParameters.debug = this.data.debug
+        if (this.data.detectionMode !== '') arProfile.contextParameters.detectionMode = this.data.detectionMode
+        if (this.data.matrixCodeType !== '') arProfile.contextParameters.matrixCodeType = this.data.matrixCodeType
+        if (this.data.patternRatio !== -1) arProfile.contextParameters.patternRatio = this.data.patternRatio
+        if (this.data.labelingMode !== '') arProfile.contextParameters.labelingMode = this.data.labelingMode
+        if (this.data.cameraParametersUrl !== '') arProfile.contextParameters.cameraParametersUrl = this.data.cameraParametersUrl
+        if (this.data.maxDetectionRate !== -1) arProfile.contextParameters.maxDetectionRate = this.data.maxDetectionRate
+        if (this.data.canvasWidth !== -1) arProfile.contextParameters.canvasWidth = this.data.canvasWidth
+        if (this.data.canvasHeight !== -1) arProfile.contextParameters.canvasHeight = this.data.canvasHeight
+
+        if (this.data.sourceType !== '') arProfile.sourceParameters.sourceType = this.data.sourceType
+        if (this.data.sourceUrl !== '') arProfile.sourceParameters.sourceUrl = this.data.sourceUrl
+        if (this.data.sourceWidth !== -1) arProfile.sourceParameters.sourceWidth = this.data.sourceWidth
+        if (this.data.sourceHeight !== -1) arProfile.sourceParameters.sourceHeight = this.data.sourceHeight
+        if (this.data.deviceId !== '') arProfile.sourceParameters.deviceId = this.data.deviceId
+        if (this.data.displayWidth !== -1) arProfile.sourceParameters.displayWidth = this.data.displayWidth
+        if (this.data.displayHeight !== -1) arProfile.sourceParameters.displayHeight = this.data.displayHeight
+
+        arProfile.checkIfValid()
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		Code Separator
+        //////////////////////////////////////////////////////////////////////////////
+
+        this._arSession = null
+
+        _this.isReady = false
+        _this.needsOverride = true
+
+        // wait until the renderer is isReady
+        this.el.sceneEl.addEventListener('renderstart', function () {
+            var scene = _this.el.sceneEl.object3D
+            var camera = _this.el.sceneEl.camera
+            var renderer = _this.el.sceneEl.renderer
+
+            //////////////////////////////////////////////////////////////////////////////
+            //		build ARjs.Session
+            //////////////////////////////////////////////////////////////////////////////
+            var arSession = _this._arSession = new ARjs.Session({
+                scene: scene,
+                renderer: renderer,
+                camera: camera,
+                sourceParameters: arProfile.sourceParameters,
+                contextParameters: arProfile.contextParameters
+            })
+
+            //////////////////////////////////////////////////////////////////////////////
+            //		Code Separator
+            //////////////////////////////////////////////////////////////////////////////
+
+            _this.isReady = true
+
+            //////////////////////////////////////////////////////////////////////////////
+            //		awful resize trick
+            //////////////////////////////////////////////////////////////////////////////
+            // KLUDGE
+            window.addEventListener('resize', onResize)
+            function onResize() {
+                var arSource = _this._arSession.arSource
+
+                // ugly kludge to get resize on aframe... not even sure it works
+                if (arProfile.contextParameters.trackingBackend !== 'tango') {
+                    arSource.copyElementSizeTo(document.body)
+                }
+
+                // fixing a-frame css
+                var buttonElement = document.querySelector('.a-enter-vr')
+                if (buttonElement) {
+                    buttonElement.style.position = 'fixed'
+                }
+            }
+
+            //////////////////////////////////////////////////////////////////////////////
+            //		honor .debugUIEnabled
+            //////////////////////////////////////////////////////////////////////////////
+            if (_this.data.debugUIEnabled) initDebugUI()
+            function initDebugUI() {
+                // get or create containerElement
+                var containerElement = document.querySelector('#arjsDebugUIContainer')
+                if (containerElement === null) {
+                    containerElement = document.createElement('div')
+                    containerElement.id = 'arjsDebugUIContainer'
+                    containerElement.setAttribute('style', 'position: fixed; bottom: 10px; width:100%; text-align: center; z-index: 1;color: grey;')
+                    document.body.appendChild(containerElement)
+                }
+
+                // create sessionDebugUI
+                var sessionDebugUI = new ARjs.SessionDebugUI(arSession)
+                containerElement.appendChild(sessionDebugUI.domElement)
+            }
+        })
+
+        //////////////////////////////////////////////////////////////////////////////
+        //		Code Separator
+        //////////////////////////////////////////////////////////////////////////////
+        // TODO this is crappy - code an exponential backoff - max 1 seconds
+        // KLUDGE: kludge to write a 'resize' event
+        var startedAt = Date.now()
+        var timerId = setInterval(function () {
+            if (Date.now() - startedAt > 10000 * 1000) {
+                clearInterval(timerId)
+                return
+            }
+            // onResize()
+            window.dispatchEvent(new Event('resize'));
+        }, 1000 / 30)
+    },
+
+    tick: function () {
+        // skip it if not yet isInitialised
+        if (this.isReady === false) return
+
+        // update arSession
+        this._arSession.update()
+
+        // copy projection matrix to camera
+        this._arSession.onResize()
+    },
+})
